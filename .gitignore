@@ -1,0 +1,75 @@
+# Spring Boot 관련
+# 빌드 결과물
+/target/
+/build/
+
+# Maven 관련
+/.mvn/
+/mvnw
+/mvnw.cmd
+pom.xml.versionsBackup
+
+# Gradle 관련 (Gradle을 사용하는 경우)
+/.gradle/
+/gradlew
+/gradlew.bat
+
+# IDE 관련
+/.idea/              # IntelliJ IDEA
+*.iml               # IntelliJ 모듈 파일
+/.vscode/           # Visual Studio Code
+*.swp               # Vim 스왑 파일
+
+# 로그 파일
+*.log
+
+# 환경 변수 및 민감한 정보
+.env
+application-*.properties  # application-dev.properties 같은 환경별 설정 파일
+
+# Vue 관련
+/node_modules/       # Node.js 모듈
+/dist/              # Vue 빌드 결과물
+/public/dist/        # public 디렉토리 내 빌드 결과물 (구조에 따라 다름)
+
+# npm/yarn 관련
+package-lock.json   # npm lock 파일 (yarn.lock을 사용한다면 제외 가능)
+yarn.lock           # yarn lock 파일 (package-lock.json을 사용한다면 제외 가능)
+
+# 환경 변수
+.env
+.env.local
+.env.development
+.env.production
+
+# Vue CLI 관련
+*.log               # 로그 파일
+*.cache             # 캐시 파일
+
+# 루트 디렉토리 .gitignore
+
+# Spring Boot (backend 디렉토리)
+/backend/target/
+/backend/.mvn/
+/backend/mvnw
+/backend/mvnw.cmd
+/backend/.idea/
+/backend/*.iml
+/backend/*.log
+/backend/application-*.properties
+
+# Vue (frontend 디렉토리)
+/frontend/node_modules/
+/frontend/dist/
+/frontend/package-lock.json
+/frontend/.env
+/frontend/.env.local
+/frontend/.env.development
+/frontend/.env.production
+
+# IDE 및 기타
+/.idea/
+/.vscode/
+*.swp
+
+.DS_Store
