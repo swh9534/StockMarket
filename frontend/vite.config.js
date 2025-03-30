@@ -10,10 +10,14 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  build: {
+    outDir: "../backend/src/main/resources/static",
+  },
   server: {
     proxy: {
-      "/api": "http://springboot.skala25a.project.skala-ai.com",
+      "/api": {
+        target: "http://localhost:8080",
+      },
     },
-    cors: false,
   },
 });

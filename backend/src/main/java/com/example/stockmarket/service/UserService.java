@@ -1,51 +1,11 @@
 package com.example.stockmarket.service;
 
-import com.example.stockmarket.domain.Player;
 import com.example.stockmarket.domain.User;
-import com.example.stockmarket.repository.PlayerRepository;
-import com.example.stockmarket.repository.UserRepository;
-import org.springframework.stereotype.Service;
+import com.example.stockmarket.exception.AuthenticationException;
 
-@Service
-public class UserService {
-    private final UserRepository userRepository;
-    private final PlayerRepository playerRepository;
-
-    public UserService(UserRepository userRepository, PlayerRepository playerRepository) {
-        this.userRepository = userRepository;
-        this.playerRepository = playerRepository;
-    }
-
-    public User login(String userId, String password) {
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            throw new IllegalArgumentException("존재하지 않는 ID입니다.");
-        }
-        if (!user.getPassword().equals(password)) {
-            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
-        }
-        return user;
-    }
-
-    public User register(String userId, String password, String playerName, int initialCash) {
-        if (userRepository.findById(userId).isPresent()) {
-            throw new IllegalArgumentException("이미 존재하는 ID입니다.");
-        }
-        if (initialCash < 10000) {
-            throw new IllegalArgumentException("초기 투자금은 최소 10,000원이어야 합니다.");
-        }
-
-        String playerId = "PLAYER" + (userRepository.findAll().size() + 1);
-        Player player = new Player(playerId, playerName, initialCash);
-        playerRepository.save(player);
-
-        User user = new User(userId, password, player);
-        userRepository.save(user);
-
-        return user;
-    }
-
-    public boolean isAdmin(String userId, String password) {
-        return userId.equals("admin") && password.equals("1234");
-    }
+public interface UserService {
+    User login(String userId, String password) throws AuthenticationException;
+    User register(String userId, String password, String playerName, int initialCash);
+    boolean isAdmin(String userId, String password) throws AuthenticationException;
+    User findById(String userId);
 }

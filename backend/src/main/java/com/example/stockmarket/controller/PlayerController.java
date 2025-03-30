@@ -2,6 +2,7 @@ package com.example.stockmarket.controller;
 
 import com.example.stockmarket.domain.Player;
 import com.example.stockmarket.domain.PlayerStock;
+import com.example.stockmarket.dto.StockRequest;
 import com.example.stockmarket.service.PlayerService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -32,10 +33,10 @@ public class PlayerController {
     }
 
     @PostMapping("/{playerId}/buy")
-    public ResponseEntity<String> buyStock(@PathVariable String playerId, @RequestParam String stockName, @RequestParam int quantity) {
+    public ResponseEntity<String> buyStock(@PathVariable String playerId, @RequestBody StockRequest stockRequest) {
         try {
-            playerService.buyStock(playerId, stockName, quantity);
-            return ResponseEntity.ok("주식 매수 완료: " + stockName + " " + quantity + "주");
+            playerService.buyStock(playerId, stockRequest.getStockName(), stockRequest.getQuantity());
+            return ResponseEntity.ok("주식 매수 완료: " + stockRequest.getStockName() + " " + stockRequest.getQuantity() + "주");
         } catch (Exception e) {
             return ResponseEntity.badRequest().body("매수 실패: " + e.getMessage());
         }

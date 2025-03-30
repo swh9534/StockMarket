@@ -22,7 +22,8 @@ const table = reactive({
 const player = usePlayer();
 
 const getPlayerInfo = async () => {
-  const url = `/api/players/${player.playerId}`;
+  console.log("playerId:", player.playerId);
+  const url = `/api/players/${player.currentUser.playerId}`;
   const response = await apiCall.get(url, null, null);
   console.log("getPlayerInfo 응답:", response.body);
 
@@ -69,10 +70,8 @@ const sellPlayerStock = async () => {
 };
 
 onMounted(() => {
-  console.log("player 객체:", player); // player 상태 확인
-  if (!player.playerId) {
-    router.push("/");
-  } else {
+  if (player.currentUser?.playerId) {
+    player.playerId = player.currentUser.playerId;
     getPlayerInfo();
   }
 });

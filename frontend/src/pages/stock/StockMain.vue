@@ -1,9 +1,18 @@
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, onMounted } from "vue";
 
 import PlayerStocks from "./components/PlayerStocks.vue";
 import StockList from "./components/StockList.vue";
 
+const playerId = ref("");
+
+// 마운트 시 localStorage에서 playerId 확인
+onMounted(() => {
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+  if (currentUser?.playerId) {
+    playerId.value = currentUser.playerId;
+  }
+});
 </script>
 
 <template>
@@ -13,13 +22,24 @@ import StockList from "./components/StockList.vue";
         <span class="ps-2 fs-2">SKALA STOCK Market</span>
       </div>
     </div>
-    <div class="row">
-      <div class="col border m-1">
-        <StockList />
+
+    <template v-if="playerId">
+      <div class="row">
+        <div class="col border m-1">
+          <StockList />
+        </div>
+        <div class="col border m-1">
+          <PlayerStocks />
+        </div>
       </div>
-      <div class="col border m-1">
-        <PlayerStocks />
+    </template>
+
+    <template v-else>
+      <div class="row mt-4">
+        <div class="col text-center text-danger fs-5">
+          플레이어 정보가 없습니다. 로그인 후 이용해 주세요.
+        </div>
       </div>
-    </div>
+    </template>
   </div>
 </template>
