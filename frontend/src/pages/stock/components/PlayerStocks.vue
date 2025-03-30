@@ -3,6 +3,8 @@ import { usePlayer } from "@/scripts/store-player";
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import apiCall from "@/scripts/api-call";
+import { notifyError } from "@/scripts/store-popups";
+
 
 const router = useRouter();
 
@@ -23,13 +25,23 @@ const player = usePlayer();
 
 const getPlayerInfo = async () => {
   console.log("playerId:", player.playerId);
-  const url = `/api/players/${player.currentUser.playerId}`;
-  const response = await apiCall.get(url, null, null);
-  console.log("getPlayerInfo 응답:", response.body);
 
-  if (response.result === apiCall.Response.SUCCESS) {
-    table.items = response.body.playerStockList || [];
-    player.playerMoney = response.body.playerMoney || 0;
+  const playerId = player.currentUser?.playerId || player.playerId;
+
+  if (!playerId) {
+    console.warn("playerId가 없습니다. 정보를 가져올 수 없습니다.");
+    return;
+  }
+
+  const url = `/api/players/${playerId}`;
+  const response = await apiCall.justGet(url, null, null); // 알림 없게
+  console.log("gkkgkgk", response);
+  if (response.playerId) {
+    table.items = response.playerStockList || [];
+    player.playerMoney = response.cash || 0;
+    // 정상 처리
+  } else {
+    notifyError("플레이어 정보를 불러오지 못했습니다.");
   }
 };
 
@@ -70,11 +82,14 @@ const sellPlayerStock = async () => {
 };
 
 onMounted(() => {
-  if (player.currentUser?.playerId) {
-    player.playerId = player.currentUser.playerId;
+  console.log("playerId:", player.playerId);
+  if (player.playerId) {
     getPlayerInfo();
+  } else {
+    console.warn("playerId 없음");
   }
 });
+
 </script>
 
 <template>

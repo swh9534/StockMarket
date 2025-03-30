@@ -32,9 +32,11 @@ const handleResponse = async (response: Response, notify: boolean) => {
             return data;
         }
     } else {
-        const errorMsg = 'Network response was not ok.';
+        const errorText = await response.text(); // 추가!
+        const errorMsg = `HTTP ${response.status}: ${response.statusText} - ${errorText}`;
+        console.error("❌ handleResponse 실패:", errorMsg); // 로그
         if (notify) {
-            notifyError(errorMsg);
+            notifyError(errorMsg); // 더 유의미한 메시지로 변경 가능
         }
         return { result: Response.FAIL, code: Response.FAIL, message: errorMsg, body: null };
     }
