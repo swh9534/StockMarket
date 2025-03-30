@@ -25,6 +25,8 @@ const getStockList = async () => {
 
   try {
     const { body: stocks } = await apiCall.get(url); // API 응답에서 stocks 배열 가져오기
+    console.log("받은 주식 데이터:", stocks); // 이 줄 추가
+
 
     if (Array.isArray(stocks)) {
       table.items.push(...stocks); // 기존 항목에 추가

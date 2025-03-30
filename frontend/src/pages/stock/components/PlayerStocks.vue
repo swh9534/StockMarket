@@ -70,11 +70,14 @@ const sellPlayerStock = async () => {
 };
 
 onMounted(() => {
-  if (player.currentUser?.playerId) {
-    player.playerId = player.currentUser.playerId;
+  console.log("playerId:", player.playerId);
+  if (player.playerId) {
     getPlayerInfo();
+  } else {
+    console.warn("playerId 없음");
   }
 });
+
 </script>
 
 <template>

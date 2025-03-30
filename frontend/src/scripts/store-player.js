@@ -8,11 +8,19 @@ const storage = reactive({
 
 // localStorage에서 초기값 로드
 const initStorage = () => {
-  const data = JSON.parse(localStorage.getItem("player") || "{}");
-  if (data.playerId) {
-    storage.playerId = data.playerId;
-    storage.playerMoney = data.playerMoney;
-    storage.playerStockList = data.playerStockList || [];
+  const playerData = JSON.parse(localStorage.getItem("player") || "{}");
+
+  if (playerData.playerId) {
+    storage.playerId = playerData.playerId;
+    storage.playerMoney = playerData.playerMoney || 0;
+    storage.playerStockList = playerData.playerStockList || [];
+  } else {
+    const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+    if (currentUser.playerId) {
+      storage.playerId = currentUser.playerId;
+      storage.playerMoney = currentUser.cash || 0;
+      storage.playerStockList = [];
+    }
   }
 };
 
