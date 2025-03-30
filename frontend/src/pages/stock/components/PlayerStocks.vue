@@ -1,6 +1,6 @@
 <script setup>
 import { usePlayer } from "@/scripts/store-player";
-import { onMounted, reactive, ref } from "vue";
+import { onMounted, reactive, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import apiCall from "@/scripts/api-call";
 import { notifyError } from "@/scripts/store-popups";
@@ -68,7 +68,19 @@ const getPlayerInfo = async () => {
   }
 };
 
-// 주식 거래 (매수/매도)
+// 주식 선택 시 자동으로 입력
+const selectStock = (stockNameSelected) => {
+  stockName.value = stockNameSelected;
+};
+
+// stockName에 맞는 주식만 필터링
+const filteredStocks = computed(() => {
+  return table.items.filter((stock) =>
+    stock.stockName.toLowerCase().includes(stockName.value.toLowerCase())
+  );
+});
+
+// 주식 거래 처리
 const tradeStock = async (action) => {
   if (!player.playerId || !stockName.value || !stockQuantity.value) {
     notifyError("필수 입력값을 확인해주세요.");
@@ -87,7 +99,7 @@ const tradeStock = async (action) => {
     const response = await apiCall.post(url, null, data);
     console.log(`${action} 응답 데이터:`, response);
 
-    // 응답이 성공적인 경우
+    // response 자체가 응답 데이터인 경우
     if (response && response.message && response.message.includes("완료")) {
       notifySuccess(`${action === "buy" ? "주식 구매" : "주식 판매"} 성공!`);
       getPlayerInfo();
@@ -157,16 +169,19 @@ onMounted(() => {
       <label class="col-form-label form-control-sm p-1">주식선택</label>
     </div>
     <div class="col">
-      <select v-model="stockName" class="form-control form-control-sm">
-        <option value="" disabled>주식을 선택하세요</option>
+      <input
+        v-model="stockName"
+        placeholder="주식이름"
+        list="stock-names"
+        class="form-control form-control-sm"
+      />
+      <datalist id="stock-names">
         <option
-          v-for="item in table.items"
-          :key="item.id"
-          :value="item.stockName"
-        >
-          {{ item.stockName }}
-        </option>
-      </select>
+          v-for="stock in filteredStocks"
+          :key="stock.stockName"
+          :value="stock.stockName"
+        ></option>
+      </datalist>
     </div>
     <div class="col">
       <InlineInput v-model="stockQuantity" placeholder="주식수량" />
