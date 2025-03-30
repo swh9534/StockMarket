@@ -1,8 +1,10 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import apiCall from "@/scripts/api-call";
 import { notifyError } from "@/scripts/store-popups";
 
+const routter = useRouter();
 const stockName = ref("");
 const stockPrice = ref("");
 const table = reactive({
@@ -44,6 +46,11 @@ const getStockList = async () => {
   }
 };
 
+// 주식 클릭 시 그래프 페이지로 이동
+const showStockGraph = (stock) => {
+  router.push({ path: "/stock-graph", query: { stockName: stock.stockName } });
+};
+
 // 스크롤 감지 (현재는 기능 없음, 필요 시 구현 추가)
 const handleScroll = (event) => {
   const bottom =
@@ -82,6 +89,7 @@ onMounted(() => {
         :headers="table.headers"
         :items="table.items"
         :nosetting="true"
+        @row-click="showStockGraph"
       />
     </div>
   </div>
