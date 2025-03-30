@@ -19,7 +19,7 @@ const initStorage = () => {
     if (currentUser.playerId) {
       storage.playerId = currentUser.playerId;
       storage.playerMoney = currentUser.cash || 0;
-      storage.playerStockList = [];
+      storage.playerStockList = currentUser.playerStockList || [];
     }
   }
 };
@@ -28,9 +28,16 @@ export const usePlayer = () => {
   initStorage();
   return storage;
 };
-export const storePlayer = (player) => {
+
+export const storePlayer = (res) => {
+  if (!res || res.result !== 0 || !res.data) {
+    console.warn("storePlayer: 유효하지 않은 응답", res);
+    return;
+  }
+
+  const player = res.data;
   storage.playerId = player.playerId;
-  storage.playerMoney = player.money || player.playerMoney || 0; // API 응답 필드명 대응
+  storage.playerMoney = player.cash || player.money || 0;
   storage.playerStockList = player.playerStockList || [];
   localStorage.setItem("player", JSON.stringify(storage));
 };

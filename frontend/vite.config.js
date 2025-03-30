@@ -20,4 +20,7 @@ export default defineConfig({
       },
     },
   },
+  devServer: {
+    historyApiFallback: true
+  }
 });

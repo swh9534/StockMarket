@@ -34,15 +34,14 @@ const getPlayerInfo = async () => {
   }
 
   const url = `/api/players/${playerId}`;
-  const response = await apiCall.get(url, null, null);
-  console.log("getPlayerInfo 응답:", response);
-
-  if (response.result === apiCall.Response.SUCCESS && response.body) {
-    table.items = response.body.playerStockList || [];
-    player.playerMoney = response.body.playerMoney || 0;
+  const response = await apiCall.justGet(url, null, null); // 알림 없게
+  console.log("gkkgkgk", response);
+  if (response.playerId) {
+    table.items = response.playerStockList || [];
+    player.playerMoney = response.cash || 0;
+    // 정상 처리
   } else {
-    notifyError("플레이어 정보를 불러오는 데 실패했습니다.");
-    console.warn("플레이어 응답 데이터 이상:", response);
+    notifyError("플레이어 정보를 불러오지 못했습니다.");
   }
 };
 

@@ -3,6 +3,8 @@ import { onMounted, reactive, ref } from "vue";
 import apiCall from "@/scripts/api-call";
 import { notifyError } from "@/scripts/store-popups";
 
+
+
 const stockName = ref("");
 const stockPrice = ref("");
 const table = reactive({
@@ -18,6 +20,8 @@ const isLoading = ref(false); // 로딩 상태를 추적
 let currentOffset = 0;
 
 const getStockList = async () => {
+  console.log("getStockList 시작");
+
   if (isLoading.value) return; // 중복 요청 방지
 
   isLoading.value = true;
@@ -25,11 +29,14 @@ const getStockList = async () => {
 
   try {
     const response = await apiCall.get(url, null, null);
+
     console.log("받은 주식 데이터:", response);
 
-    if (response.result === apiCall.Response.SUCCESS && Array.isArray(response.body)) {
-      table.items = [...response.body]; // 기존 배열에 추가가 아니라 덮어쓰기 (필요하면 push로 변경 가능)
+    if (Array.isArray(response)) {
+      table.items = [...response];
+      console.log("table", table);
     } else {
+      notifyError("받은 데이터가 배열이 아닙니다.");
       console.warn("주식 데이터가 비정상입니다:", response);
     }
   } catch (error) {
@@ -71,8 +78,10 @@ const handleScroll = (event) => {
 };
 
 onMounted(() => {
-  getStockList(); // 처음 로드 시 첫 번째 목록을 가져옴
+  console.log("onMounted 실행됨");
+  getStockList();
 });
+
 </script>
 
 <template>
