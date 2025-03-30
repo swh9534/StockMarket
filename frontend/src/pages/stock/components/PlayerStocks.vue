@@ -3,6 +3,8 @@ import { usePlayer } from "@/scripts/store-player";
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import apiCall from "@/scripts/api-call";
+import { notifyError } from "@/scripts/store-popups";
+
 
 const router = useRouter();
 
@@ -23,13 +25,24 @@ const player = usePlayer();
 
 const getPlayerInfo = async () => {
   console.log("playerId:", player.playerId);
-  const url = `/api/players/${player.currentUser.playerId}`;
-  const response = await apiCall.get(url, null, null);
-  console.log("getPlayerInfo 응답:", response.body);
 
-  if (response.result === apiCall.Response.SUCCESS) {
+  const playerId = player.currentUser?.playerId || player.playerId;
+
+  if (!playerId) {
+    console.warn("playerId가 없습니다. 정보를 가져올 수 없습니다.");
+    return;
+  }
+
+  const url = `/api/players/${playerId}`;
+  const response = await apiCall.get(url, null, null);
+  console.log("getPlayerInfo 응답:", response);
+
+  if (response.result === apiCall.Response.SUCCESS && response.body) {
     table.items = response.body.playerStockList || [];
     player.playerMoney = response.body.playerMoney || 0;
+  } else {
+    notifyError("플레이어 정보를 불러오는 데 실패했습니다.");
+    console.warn("플레이어 응답 데이터 이상:", response);
   }
 };
 

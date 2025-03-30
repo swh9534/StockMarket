@@ -18,21 +18,23 @@ const isLoading = ref(false); // 로딩 상태를 추적
 let currentOffset = 0;
 
 const getStockList = async () => {
-  if (isLoading.value) return; // 로딩 중이면 중복 요청 방지
+  if (isLoading.value) return; // 중복 요청 방지
 
   isLoading.value = true;
-  const url = "/api/stocks"; // API 경로 수정
+  const url = "/api/stocks";
 
   try {
-    const { body: stocks } = await apiCall.get(url); // API 응답에서 stocks 배열 가져오기
-    console.log("받은 주식 데이터:", stocks); // 이 줄 추가
+    const response = await apiCall.get(url, null, null);
+    console.log("받은 주식 데이터:", response);
 
-
-    if (Array.isArray(stocks)) {
-      table.items.push(...stocks); // 기존 항목에 추가
+    if (response.result === apiCall.Response.SUCCESS && Array.isArray(response.body)) {
+      table.items = [...response.body]; // 기존 배열에 추가가 아니라 덮어쓰기 (필요하면 push로 변경 가능)
+    } else {
+      console.warn("주식 데이터가 비정상입니다:", response);
     }
   } catch (error) {
     notifyError("주식 목록을 불러오는 데 실패했습니다.");
+    console.error("주식 목록 요청 에러:", error);
   } finally {
     isLoading.value = false;
   }
