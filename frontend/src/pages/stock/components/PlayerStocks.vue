@@ -4,92 +4,111 @@ import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import apiCall from "@/scripts/api-call";
 import { notifyError } from "@/scripts/store-popups";
-
+import { notifySuccess } from "@/scripts/store-popups";
 
 const router = useRouter();
 
-const stockId = ref("");
-const stockQuantity = ref("");
+const stockName = ref(""); // 주식 이름
+const stockQuantity = ref(""); // 주식 수량
+const player = usePlayer();
 
+// 테이블 데이터
 const table = reactive({
   headers: [
-    { label: "주식ID", value: "id" },
     { label: "주식명", value: "stockName" },
-    { label: "주식가격", value: "stockPrice" },
-    { label: "보유수량", value: "stockQuantity" },
+    { label: "가격", value: "stockPrice" },
+    { label: "수량", value: "stockQuantity" },
+    { label: "투자금액", value: "investedAmount" },
+    { label: "현재 가치", value: "totalValue" },
+    { label: "수익률", value: "profitRate" },
   ],
   items: [],
 });
 
-const player = usePlayer();
-
+// 플레이어 정보와 포트폴리오 정보 가져오기
 const getPlayerInfo = async () => {
-  console.log("playerId:", player.playerId);
-
   const playerId = player.currentUser?.playerId || player.playerId;
-
   if (!playerId) {
     console.warn("playerId가 없습니다. 정보를 가져올 수 없습니다.");
     return;
   }
 
-  const url = `/api/players/${playerId}`;
-  const response = await apiCall.justGet(url, null, null); // 알림 없게
-  console.log("gkkgkgk", response);
-  if (response.playerId) {
-    table.items = response.playerStockList || [];
-    player.playerMoney = response.cash || 0;
-    // 정상 처리
+  // 기본 플레이어 정보 가져오기
+  const playerUrl = `/api/players/${playerId}`;
+  const playerResponse = await apiCall.justGet(playerUrl, null, null);
+  if (playerResponse.playerId) {
+    player.playerMoney = playerResponse.cash || 0;
   } else {
     notifyError("플레이어 정보를 불러오지 못했습니다.");
   }
-};
 
-const buyPlayerStock = async () => {
-  const url = "/api/players/buy";
-  const data = {
-    playerId: player.playerId,
-    stockId: stockId.value,
-    stockQuantity: stockQuantity.value,
-  };
+  // 포트폴리오 정보 가져오기
+  const portfolioUrl = `/api/players/${playerId}/portfolio`;
+  try {
+    const portfolioResponse = await apiCall.justGet(portfolioUrl, null, null);
+    console.log("포트폴리오 응답:", portfolioResponse);
 
-  console.log("구매 요청 데이터:", data);
+    if (Array.isArray(portfolioResponse)) {
+      // 데이터 변환하여 사용
+      table.items = portfolioResponse.map((item) => ({
+        id: item.id,
+        stockName: item.stockName,
+        stockPrice: item.stock.stockPrice,
+        stockQuantity: item.quantity,
+        investedAmount: item.investedAmount,
+        totalValue: item.totalValue,
+        profitRate: item.profitRate.toFixed(2) + "%",
+      }));
+    }
 
-  const response = await apiCall.post(url, null, data);
-  if (response.result === apiCall.Response.SUCCESS) {
-    getPlayerInfo();
-    stockId.value = "";
-    stockQuantity.value = "";
+    console.log("설정된 주식 목록:", table.items);
+  } catch (error) {
+    console.error("포트폴리오 정보 가져오기 실패:", error);
+    notifyError("주식 목록을 불러오지 못했습니다.");
   }
 };
 
-const sellPlayerStock = async () => {
-  const url = "/api/players/sell";
+// 주식 거래 (매수/매도)
+const tradeStock = async (action) => {
+  if (!player.playerId || !stockName.value || !stockQuantity.value) {
+    notifyError("필수 입력값을 확인해주세요.");
+    return;
+  }
+
+  const url = `/api/players/${player.playerId}/${action}`;
   const data = {
-    playerId: player.playerId,
-    stockId: parseInt(stockId.value, 10),
-    stockQuantity: parseInt(stockQuantity.value, 10),
+    stockName: stockName.value,
+    quantity: parseInt(stockQuantity.value, 10),
   };
 
-  console.log("판매 요청 데이터:", data);
+  console.log(`${action} 요청 데이터:`, data);
 
-  const response = await apiCall.post(url, null, data);
-  if (response.result === apiCall.Response.SUCCESS) {
-    getPlayerInfo();
-    stockId.value = "";
-    stockQuantity.value = "";
+  try {
+    const response = await apiCall.post(url, null, data);
+    console.log(`${action} 응답 데이터:`, response);
+
+    // 응답이 성공적인 경우
+    if (response && response.message && response.message.includes("완료")) {
+      notifySuccess(`${action === "buy" ? "주식 구매" : "주식 판매"} 성공!`);
+      getPlayerInfo();
+      stockName.value = "";
+      stockQuantity.value = "";
+    } else {
+      notifyError("거래 실패: 서버 응답 오류");
+      console.error("거래 실패:", response);
+    }
+  } catch (error) {
+    notifyError("거래 실패: " + error.message);
   }
 };
 
 onMounted(() => {
-  console.log("playerId:", player.playerId);
   if (player.playerId) {
     getPlayerInfo();
   } else {
     console.warn("playerId 없음");
   }
 });
-
 </script>
 
 <template>
@@ -138,7 +157,16 @@ onMounted(() => {
       <label class="col-form-label form-control-sm p-1">주식선택</label>
     </div>
     <div class="col">
-      <InlineInput v-model="stockId" placeholder="주식ID" />
+      <select v-model="stockName" class="form-control form-control-sm">
+        <option value="" disabled>주식을 선택하세요</option>
+        <option
+          v-for="item in table.items"
+          :key="item.id"
+          :value="item.stockName"
+        >
+          {{ item.stockName }}
+        </option>
+      </select>
     </div>
     <div class="col">
       <InlineInput v-model="stockQuantity" placeholder="주식수량" />
@@ -146,13 +174,13 @@ onMounted(() => {
     <div class="col d-flex justify-content-start">
       <button
         class="btn btn-sm btn-outline-primary m-1"
-        @click="buyPlayerStock"
+        @click="tradeStock('buy')"
       >
         주식 구매
       </button>
       <button
         class="btn btn-sm btn-outline-primary m-1"
-        @click="sellPlayerStock"
+        @click="tradeStock('sell')"
       >
         주식 판매
       </button>

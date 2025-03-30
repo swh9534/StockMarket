@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/players")
@@ -33,22 +35,44 @@ public class PlayerController {
     }
 
     @PostMapping("/{playerId}/buy")
-    public ResponseEntity<String> buyStock(@PathVariable String playerId, @RequestBody StockRequest stockRequest) {
+    public ResponseEntity<Map<String, Object>> buyStock(@PathVariable String playerId, @RequestBody StockRequest stockRequest) {
         try {
             playerService.buyStock(playerId, stockRequest.getStockName(), stockRequest.getQuantity());
-            return ResponseEntity.ok("주식 매수 완료: " + stockRequest.getStockName() + " " + stockRequest.getQuantity() + "주");
+
+            // Map을 사용하여 JSON 응답 반환
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "주식 매수 완료");
+            response.put("stockName", stockRequest.getStockName());
+            response.put("quantity", stockRequest.getQuantity());
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("매수 실패: " + e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "매수 실패");
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
     @PostMapping("/{playerId}/sell")
-    public ResponseEntity<String> sellStock(@PathVariable String playerId, @RequestParam String stockName, @RequestParam int quantity) {
+    public ResponseEntity<Map<String, Object>> sellStock(
+            @PathVariable String playerId,
+            @RequestBody StockRequest stockRequest) {  // @RequestParam에서 @RequestBody로 변경
         try {
-            playerService.sellStock(playerId, stockName, quantity);
-            return ResponseEntity.ok("주식 매도 완료: " + stockName + " " + quantity + "주");
+            playerService.sellStock(playerId, stockRequest.getStockName(), stockRequest.getQuantity());
+
+            // Map을 사용하여 JSON 응답 반환
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "주식 매도 완료");
+            response.put("stockName", stockRequest.getStockName());
+            response.put("quantity", stockRequest.getQuantity());
+
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("매도 실패: " + e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "매도 실패");
+            response.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 }
