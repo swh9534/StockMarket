@@ -1,12 +1,10 @@
 <script setup>
 import { ref, onMounted } from "vue";
-
 import PlayerStocks from "./components/PlayerStocks.vue";
 import StockList from "./components/StockList.vue";
 
 const playerId = ref("");
 
-// 마운트 시 localStorage에서 playerId 확인
 onMounted(() => {
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
   if (currentUser?.playerId) {
@@ -25,10 +23,10 @@ onMounted(() => {
 
     <template v-if="playerId">
       <div class="row">
-        <div class="col border m-1">
+        <div class="col-3 border m-1">
           <StockList />
         </div>
-        <div class="col border m-1">
+        <div class="col-8 border m-1">
           <PlayerStocks />
         </div>
       </div>

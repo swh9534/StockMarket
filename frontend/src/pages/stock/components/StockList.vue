@@ -14,43 +14,49 @@ const table = reactive({
 });
 
 const isLoading = ref(false); // 로딩 상태를 추적
-let currentOffset = 0;
 
 const getStockList = async () => {
-  if (isLoading.value) return; // 중복 요청 방지
+  if (isLoading.value) {
+    console.log("이미 요청 중입니다. 중복 요청 방지됨.");
+    return;
+  }
 
   isLoading.value = true;
   const url = "/api/stocks";
 
   try {
     const response = await apiCall.get(url, null, null);
-
     console.log("받은 주식 데이터:", response);
 
     if (Array.isArray(response)) {
       table.items = [...response];
-      console.log("table", table);
+      console.log("업데이트된 테이블:", table);
     } else {
-      notifyError("받은 데이터가 배열이 아닙니다.");
-      console.warn("주식 데이터가 비정상입니다:", response);
+      notifyError("받은 데이터가 배열 형식이 아닙니다.");
+      console.warn("비정상적인 응답 데이터:", response);
     }
   } catch (error) {
-    notifyError("주식 목록을 불러오는 데 실패했습니다.");
+    const errorMessage = error.message || "알 수 없는 오류";
+    notifyError(`주식 목록을 불러오는 데 실패했습니다: ${errorMessage}`);
     console.error("주식 목록 요청 에러:", error);
   } finally {
     isLoading.value = false;
   }
 };
 
-// 스크롤 감지
+// 스크롤 감지 (현재는 기능 없음, 필요 시 구현 추가)
 const handleScroll = (event) => {
   const bottom =
     event.target.scrollHeight ===
     event.target.scrollTop + event.target.clientHeight;
+  if (bottom) {
+    console.log("스크롤 끝에 도달함");
+    // 필요 시 추가 로직 (예: 더 많은 데이터 로드)
+  }
 };
 
 onMounted(() => {
-  console.log("onMounted 실행됨");
+  console.log("onMounted 실행됨 - 주식 목록 요청 시작");
   getStockList();
 });
 </script>

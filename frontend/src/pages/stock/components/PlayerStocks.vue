@@ -1,18 +1,55 @@
 <script setup>
 import { usePlayer } from "@/scripts/store-player";
-import { onMounted, reactive, ref, computed } from "vue";
+import { onMounted, computed, reactive, ref, nextTick } from "vue"; // nextTick 추가
 import { useRouter } from "vue-router";
 import apiCall from "@/scripts/api-call";
-import { notifyError } from "@/scripts/store-popups";
-import { notifySuccess } from "@/scripts/store-popups";
+import { notifySuccess, notifyError } from "@/scripts/store-popups";
+import { Pie } from "vue-chartjs";
+import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement } from "chart.js";
 
 const router = useRouter();
-
-const stockName = ref(""); // 주식 이름
-const stockQuantity = ref(""); // 주식 수량
+const stockName = ref("");
+const stockQuantity = ref("");
 const player = usePlayer();
 
-// 테이블 데이터
+ChartJS.register(Title, Tooltip, Legend, ArcElement);
+
+const chartRef = ref(null);
+const isDataLoaded = ref(false);
+
+const generateRandomColor = () => {
+  const letters = "0123456789ABCDEF";
+  let color = "#";
+  for (let i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+};
+
+const generateColors = (count) => {
+  const colors = [];
+  for (let i = 0; i < count; i++) {
+    colors.push(generateRandomColor());
+  }
+  return colors;
+};
+
+const chartData = reactive({
+  labels: ["현금"],
+  datasets: [
+    {
+      data: [0],
+      backgroundColor: ["#36A2EB"],
+      hoverBackgroundColor: ["#36A2EB"],
+    },
+  ],
+});
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+};
+
 const table = reactive({
   headers: [
     { label: "주식명", value: "stockName" },
@@ -25,7 +62,6 @@ const table = reactive({
   items: [],
 });
 
-// 플레이어 정보와 포트폴리오 정보 가져오기
 const getPlayerInfo = async () => {
   const playerId = player.currentUser?.playerId || player.playerId;
   if (!playerId) {
@@ -33,7 +69,6 @@ const getPlayerInfo = async () => {
     return;
   }
 
-  // 기본 플레이어 정보 가져오기
   const playerUrl = `/api/players/${playerId}`;
   const playerResponse = await apiCall.justGet(playerUrl, null, null);
   if (playerResponse.playerId) {
@@ -42,14 +77,12 @@ const getPlayerInfo = async () => {
     notifyError("플레이어 정보를 불러오지 못했습니다.");
   }
 
-  // 포트폴리오 정보 가져오기
   const portfolioUrl = `/api/players/${playerId}/portfolio`;
   try {
     const portfolioResponse = await apiCall.justGet(portfolioUrl, null, null);
     console.log("포트폴리오 응답:", portfolioResponse);
 
     if (Array.isArray(portfolioResponse)) {
-      // 데이터 변환하여 사용
       table.items = portfolioResponse.map((item) => ({
         id: item.id,
         stockName: item.stockName,
@@ -59,12 +92,49 @@ const getPlayerInfo = async () => {
         totalValue: item.totalValue,
         profitRate: item.profitRate.toFixed(2) + "%",
       }));
+
+      chartData.labels = ["현금"].concat(
+        portfolioResponse.map((item) => item.stockName)
+      );
+      chartData.datasets[0].data = [player.playerMoney].concat(
+        portfolioResponse.map((item) => item.totalValue)
+      );
+
+      const totalItems = portfolioResponse.length + 1;
+      const colors = generateColors(totalItems);
+      chartData.datasets[0].backgroundColor = colors;
+      chartData.datasets[0].hoverBackgroundColor = colors;
+    } else {
+      chartData.labels = ["현금"];
+      chartData.datasets[0].data = [player.playerMoney];
+      chartData.datasets[0].backgroundColor = ["#36A2EB"];
+      chartData.datasets[0].hoverBackgroundColor = ["#36A2EB"];
     }
 
+    isDataLoaded.value = true;
+
+    // 차트를 강제로 다시 그리기 위해 nextTick 사용
+    await nextTick();
+    if (chartRef.value && chartRef.value.chart) {
+      chartRef.value.chart.update(); // 차트 갱신
+    } else {
+      console.warn("차트 인스턴스가 준비되지 않았습니다.");
+    }
+    console.log("차트 데이터:", chartData);
     console.log("설정된 주식 목록:", table.items);
   } catch (error) {
     console.error("포트폴리오 정보 가져오기 실패:", error);
     notifyError("주식 목록을 불러오지 못했습니다.");
+    chartData.labels = ["현금"];
+    chartData.datasets[0].data = [player.playerMoney];
+    chartData.datasets[0].backgroundColor = ["#36A2EB"];
+    chartData.datasets[0].hoverBackgroundColor = ["#36A2EB"];
+    isDataLoaded.value = true;
+
+    await nextTick();
+    if (chartRef.value && chartRef.value.chart) {
+      chartRef.value.chart.update();
+    }
   }
 };
 
@@ -99,10 +169,9 @@ const tradeStock = async (action) => {
     const response = await apiCall.post(url, null, data);
     console.log(`${action} 응답 데이터:`, response);
 
-    // response 자체가 응답 데이터인 경우
     if (response && response.message && response.message.includes("완료")) {
       notifySuccess(`${action === "buy" ? "주식 구매" : "주식 판매"} 성공!`);
-      getPlayerInfo();
+      await getPlayerInfo(); // 거래 후 정보 갱신 및 차트 다시 그리기
       stockName.value = "";
       stockQuantity.value = "";
     } else {
@@ -124,81 +193,105 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="row mt-2">
-    <span class="fs-4"
-      ><i class="bi bi-person m-2"></i>{{ player.playerId }} 플레이어</span
-    >
-  </div>
-  <div class="row border-bottom">
-    <div class="col d-flex justify-content-end">
-      <button class="btn btn-sm btn-primary m-1" @click="getPlayerInfo">
-        <i class="bi bi-arrow-counterclockwise m-2"></i>갱신
-      </button>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col">
-      <InlineInput
-        class="m-2"
-        label="플레이어ID"
-        v-model="player.playerId"
-        :disabled="true"
-      />
-      <InlineInput
-        class="m-2"
-        label="보유금액"
-        v-model="player.playerMoney"
-        :disabled="true"
-      />
-    </div>
-  </div>
-  <div class="row g-2 align-items-center m-2 mt-0">
-    <div class="col-2 d-flex justify-content-end">
-      <label class="col-form-label form-control-sm p-1">보유주식목록</label>
-    </div>
-    <div class="col">
-      <ItemsTable
-        :headers="table.headers"
-        :items="table.items"
-        :nosetting="true"
-      />
-    </div>
-  </div>
-  <div class="row g-2 align-items-center m-2 mt-0">
-    <div class="col-2 d-flex justify-content-end">
-      <label class="col-form-label form-control-sm p-1">주식선택</label>
-    </div>
-    <div class="col">
-      <input
-        v-model="stockName"
-        placeholder="주식이름"
-        list="stock-names"
-        class="form-control form-control-sm"
-      />
-      <datalist id="stock-names">
-        <option
-          v-for="stock in filteredStocks"
-          :key="stock.stockName"
-          :value="stock.stockName"
-        ></option>
-      </datalist>
-    </div>
-    <div class="col">
-      <InlineInput v-model="stockQuantity" placeholder="주식수량" />
-    </div>
-    <div class="col d-flex justify-content-start">
-      <button
-        class="btn btn-sm btn-outline-primary m-1"
-        @click="tradeStock('buy')"
+  <div class="container-fluid">
+    <!-- 플레이어 정보 -->
+    <div class="row mt-2">
+      <span class="fs-4"
+        ><i class="bi bi-person m-2"></i>{{ player.playerId }} 플레이어</span
       >
-        주식 구매
-      </button>
-      <button
-        class="btn btn-sm btn-outline-primary m-1"
-        @click="tradeStock('sell')"
-      >
-        주식 판매
-      </button>
+    </div>
+    <div class="row border-bottom">
+      <div class="col d-flex justify-content-end">
+        <button class="btn btn-sm btn-primary m-1" @click="getPlayerInfo">
+          <i class="bi bi-arrow-counterclockwise m-2"></i>갱신
+        </button>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <InlineInput
+          class="m-2"
+          label="플레이어ID"
+          v-model="player.playerId"
+          :disabled="true"
+        />
+        <InlineInput
+          class="m-2"
+          label="보유금액"
+          v-model="player.playerMoney"
+          :disabled="true"
+        />
+      </div>
+    </div>
+
+    <!-- 보유 주식 목록 및 주식 선택 (2/3) -->
+    <div class="row">
+      <div class="col-8">
+        <div class="row g-2 align-items-center m-2 mt-0">
+          <div class="col-2 d-flex justify-content-end">
+            <label class="col-form-label form-control-sm p-1"
+              >보유주식목록</label
+            >
+          </div>
+          <div class="col">
+            <ItemsTable
+              :headers="table.headers"
+              :items="table.items"
+              :nosetting="true"
+            />
+          </div>
+        </div>
+        <div class="row g-2 align-items-center m-2 mt-0">
+          <div class="col-2 d-flex justify-content-end">
+            <label class="col-form-label form-control-sm p-1">주식선택</label>
+          </div>
+          <div class="col">
+            <input
+              v-model="stockName"
+              placeholder="주식이름"
+              list="stock-names"
+              class="form-control form-control-sm"
+            />
+            <datalist id="stock-names">
+              <option
+                v-for="stock in filteredStocks"
+                :key="stock.stockName"
+                :value="stock.stockName"
+              ></option>
+            </datalist>
+          </div>
+          <div class="col">
+            <InlineInput v-model="stockQuantity" placeholder="주식수량" />
+          </div>
+          <div class="col d-flex justify-content-start">
+            <button
+              class="btn btn-sm btn-outline-primary m-1"
+              @click="tradeStock('buy')"
+            >
+              주식 구매
+            </button>
+            <button
+              class="btn btn-sm btn-outline-primary m-1"
+              @click="tradeStock('sell')"
+            >
+              주식 판매
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 파이 차트 (1/3) -->
+      <div class="col-4">
+        <h5>총 자산</h5>
+        <div style="width: 100%; height: 400px">
+          <Pie
+            v-if="isDataLoaded"
+            ref="chartRef"
+            :data="chartData"
+            :options="chartOptions"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
