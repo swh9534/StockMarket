@@ -2,8 +2,10 @@
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import apiCall from "@/scripts/api-call";
-import StockGraph from "./StockGraph.vue"; // 추가한 그래프 컴포넌트
 import { notifyError } from "@/scripts/store-popups";
+
+// 이벤트 정의
+const emit = defineEmits();
 
 const stockName = ref("");
 const stockPrice = ref("");
@@ -16,7 +18,9 @@ const table = reactive({
 });
 
 const isLoading = ref(false); // 로딩 상태를 추적
-const selectedStock = ref(null); // 선택된 주식 데이터
+
+// 선택된 주식
+const selectedStock = ref(null);
 
 const getStockList = async () => {
   if (isLoading.value) {
@@ -48,7 +52,8 @@ const getStockList = async () => {
 };
 
 const showStockGraph = (stock) => {
-  selectedStock.value = stock; // 선택된 주식 정보를 저장
+  selectedStock.value = stock; // 선택된 주식 업데이트
+  emit("select-stock", stock); // 부모로 이벤트 전달
 };
 
 onMounted(() => {
@@ -84,7 +89,11 @@ onMounted(() => {
 
   <!-- 주식 그래프 컴포넌트 -->
   <div v-if="selectedStock" class="mt-4">
-    <StockGraph :stockName="selectedStock.stockName" />
+    <!-- key 값을 selectedStock에 stockName을 사용하여 설정 -->
+    <StockGraph
+      :key="selectedStock.stockName"
+      :stockName="selectedStock.stockName"
+    />
   </div>
 </template>
 

@@ -2,8 +2,14 @@
 import { ref, onMounted } from "vue";
 import PlayerStocks from "./components/PlayerStocks.vue";
 import StockList from "./components/StockList.vue";
+import StockGraph from "./components/StockGraph.vue"; // StockGraph 컴포넌트 추가
 
 const playerId = ref("");
+const selectedStock = ref(null); // 선택된 주식
+
+const handleSelectStock = (stock) => {
+  selectedStock.value = stock; // 선택된 주식 업데이트
+};
 
 onMounted(() => {
   const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
@@ -24,10 +30,21 @@ onMounted(() => {
     <template v-if="playerId">
       <div class="row">
         <div class="col-3 border m-1">
-          <StockList />
+          <!-- StockList 컴포넌트로부터 주식 선택 시 이벤트 전달받음 -->
+          <StockList @select-stock="handleSelectStock" />
         </div>
         <div class="col-8 border m-1">
           <PlayerStocks />
+        </div>
+      </div>
+
+      <!-- 선택된 주식의 그래프 표시 -->
+      <div class="row mt-4">
+        <div class="col-12">
+          <StockGraph
+            v-if="selectedStock"
+            :stockName="selectedStock?.stockName"
+          />
         </div>
       </div>
     </template>
