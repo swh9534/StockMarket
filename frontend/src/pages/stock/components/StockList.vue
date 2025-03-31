@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import apiCall from "@/scripts/api-call";
 import { notifyError } from "@/scripts/store-popups";
 
-const routter = useRouter();
+const router = useRouter();
 const stockName = ref("");
 const stockPrice = ref("");
 const table = reactive({
@@ -46,8 +46,8 @@ const getStockList = async () => {
   }
 };
 
-// 주식 클릭 시 그래프 페이지로 이동
 const showStockGraph = (stock) => {
+  console.log("Row clicked, stock:", stock); // 디버깅 로그
   router.push({ path: "/stock-graph", query: { stockName: stock.stockName } });
 };
 
