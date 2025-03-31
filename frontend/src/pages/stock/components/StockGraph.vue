@@ -40,31 +40,54 @@ const chartData = reactive({
 const chartOptions = {
   responsive: true,
   maintainAspectRatio: false,
+  scales: {
+    x: {
+      title: {
+        display: true,
+        text: "날짜",
+      },
+    },
+    y: {
+      title: {
+        display: true,
+        text: "가격",
+      },
+    },
+  },
 };
 
 const getStockGraphData = async () => {
   stockName.value = route.query.stockName || "";
   if (!stockName.value) {
     console.warn("주식 이름이 제공되지 않았습니다.");
+    chartData.labels = [];
+    chartData.datasets[0].data = [];
     return;
   }
 
-  const url = `/api/stocks/${stockName.value}/history`; // 가정된 API 엔드포인트
+  const url = `/api/stocks/${stockName.value}/history`;
   try {
     const response = await apiCall.get(url, null, null);
     console.log("주식 그래프 데이터 응답:", response);
 
-    if (
-      response.result === apiCall.Response.SUCCESS &&
-      Array.isArray(response.body)
-    ) {
-      chartData.labels = response.body.map((item) => item.date); // 날짜 배열
-      chartData.datasets[0].data = response.body.map((item) => item.price); // 가격 배열
+    if (Array.isArray(response) && response.length > 0) {
+      // 날짜를 가독성 있게 포맷팅 (예: "03-31 10:34")
+      chartData.labels = response.map((item) => {
+        const date = new Date(item.date);
+        return `${
+          date.getMonth() + 1
+        }-${date.getDate()} ${date.getHours()}:${date.getMinutes()}`;
+      });
+      chartData.datasets[0].data = response.map((item) => item.price);
     } else {
-      console.warn("그래프 데이터 비정상 응답:", response.message);
+      console.warn("히스토리 데이터가 없습니다.");
+      chartData.labels = [];
+      chartData.datasets[0].data = [];
     }
   } catch (error) {
     console.error("그래프 데이터 요청 실패:", error.message);
+    chartData.labels = [];
+    chartData.datasets[0].data = [];
   }
 };
 
@@ -77,11 +100,17 @@ onMounted(() => {
   <div class="container-fluid">
     <div class="row mt-2">
       <span class="fs-4"
-        ><i class="bi bi-graph-up m-2"></i>{{ stockName }} 그래프</span
+        ><i class="bi bi-graph-up m-2"></i
+        >{{ stockName || "주식 선택됨" }} 그래프</span
       >
     </div>
     <div style="width: 100%; height: 400px">
-      <Line :data="chartData" :options="chartOptions" />
+      <Line
+        v-if="chartData.labels.length > 0"
+        :data="chartData"
+        :options="chartOptions"
+      />
+      <p v-else class="text-center mt-5">그래프 데이터를 불러올 수 없습니다.</p>
     </div>
   </div>
 </template>

@@ -47,8 +47,14 @@ const getStockList = async () => {
 };
 
 const showStockGraph = (stock) => {
-  console.log("Row clicked, stock:", stock); // 디버깅 로그
-  router.push({ path: "/stock-graph", query: { stockName: stock.stockName } });
+  console.log("Routing to:", {
+    path: "/stockchart",
+    query: { stockName: stock.stockName },
+  });
+  router.push({
+    path: "/stockchart",
+    query: { stockName: stock.stockName },
+  });
 };
 
 // 스크롤 감지 (현재는 기능 없음, 필요 시 구현 추가)

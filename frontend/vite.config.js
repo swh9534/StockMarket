@@ -19,8 +19,6 @@ export default defineConfig({
         target: "http://localhost:8080",
       },
     },
+    historyApiFallback: true, // 여기에 추가
   },
-  devServer: {
-    historyApiFallback: true
-  }
 });
