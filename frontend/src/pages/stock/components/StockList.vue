@@ -2,9 +2,9 @@
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import apiCall from "@/scripts/api-call";
+import StockGraph from "./StockGraph.vue"; // 추가한 그래프 컴포넌트
 import { notifyError } from "@/scripts/store-popups";
 
-const router = useRouter();
 const stockName = ref("");
 const stockPrice = ref("");
 const table = reactive({
@@ -16,6 +16,7 @@ const table = reactive({
 });
 
 const isLoading = ref(false); // 로딩 상태를 추적
+const selectedStock = ref(null); // 선택된 주식 데이터
 
 const getStockList = async () => {
   if (isLoading.value) {
@@ -47,25 +48,7 @@ const getStockList = async () => {
 };
 
 const showStockGraph = (stock) => {
-  console.log("Routing to:", {
-    path: "/stockchart",
-    query: { stockName: stock.stockName },
-  });
-  router.push({
-    path: "/stockchart",
-    query: { stockName: stock.stockName },
-  });
-};
-
-// 스크롤 감지 (현재는 기능 없음, 필요 시 구현 추가)
-const handleScroll = (event) => {
-  const bottom =
-    event.target.scrollHeight ===
-    event.target.scrollTop + event.target.clientHeight;
-  if (bottom) {
-    console.log("스크롤 끝에 도달함");
-    // 필요 시 추가 로직 (예: 더 많은 데이터 로드)
-  }
+  selectedStock.value = stock; // 선택된 주식 정보를 저장
 };
 
 onMounted(() => {
@@ -87,7 +70,6 @@ onMounted(() => {
   </div>
   <div
     class="row g-2 align-items-center m-2 mt-0"
-    @scroll="handleScroll"
     style="height: 400px; overflow-y: auto"
   >
     <div class="col">
@@ -98,6 +80,11 @@ onMounted(() => {
         @row-click="showStockGraph"
       />
     </div>
+  </div>
+
+  <!-- 주식 그래프 컴포넌트 -->
+  <div v-if="selectedStock" class="mt-4">
+    <StockGraph :stockName="selectedStock.stockName" />
   </div>
 </template>
 

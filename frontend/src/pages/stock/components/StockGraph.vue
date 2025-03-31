@@ -1,6 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
+import { ref, reactive, onMounted } from "vue";
 import apiCall from "@/scripts/api-call";
 import { Line } from "vue-chartjs";
 import {
@@ -24,8 +23,13 @@ ChartJS.register(
   LinearScale
 );
 
-const route = useRoute();
-const stockName = ref("");
+const props = defineProps({
+  stockName: {
+    type: String,
+    required: true,
+  },
+});
+
 const chartData = reactive({
   labels: [],
   datasets: [
@@ -57,15 +61,14 @@ const chartOptions = {
 };
 
 const getStockGraphData = async () => {
-  stockName.value = route.query.stockName || "";
-  if (!stockName.value) {
+  if (!props.stockName) {
     console.warn("주식 이름이 제공되지 않았습니다.");
     chartData.labels = [];
     chartData.datasets[0].data = [];
     return;
   }
 
-  const url = `/api/stocks/${stockName.value}/history`;
+  const url = `/api/stocks/${props.stockName}/history`;
   try {
     const response = await apiCall.get(url, null, null);
     console.log("주식 그래프 데이터 응답:", response);
@@ -97,20 +100,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="container-fluid">
-    <div class="row mt-2">
-      <span class="fs-4"
-        ><i class="bi bi-graph-up m-2"></i
-        >{{ stockName || "주식 선택됨" }} 그래프</span
-      >
-    </div>
-    <div style="width: 100%; height: 400px">
-      <Line
-        v-if="chartData.labels.length > 0"
-        :data="chartData"
-        :options="chartOptions"
-      />
-      <p v-else class="text-center mt-5">그래프 데이터를 불러올 수 없습니다.</p>
-    </div>
+  <div style="width: 100%; height: 400px">
+    <Line
+      v-if="chartData.labels.length > 0"
+      :data="chartData"
+      :options="chartOptions"
+    />
+    <p v-else class="text-center mt-5">그래프 데이터를 불러올 수 없습니다.</p>
   </div>
 </template>
