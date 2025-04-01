@@ -10,6 +10,17 @@
 
 # 개요
 
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/f1c097ba-5522-4b0e-987e-24204cf39139" width="100%" /></td>
+    <td><img src="https://github.com/user-attachments/assets/b7469f59-46b0-485a-9d02-7d3b929272a2" width="100%" /></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/be4d64d1-148e-4be2-b7a5-60d2a2cfe26f" width="100%" /></td>
+    <td><img src="https://github.com/user-attachments/assets/28518448-97c8-4831-bf09-f61bc277d3e1" width="100%" /></td>
+  </tr>
+</table>
+
 > 이 프로젝트는 주식 시장 데이터를 관리하고 플레이어(사용자)가 주식을 사고팔 수 있도록 설계된 시스템입니다.  Back-End는 Spring Boot와 MariaDB를 활용하여 구현되었으며, Front-End는 Vue를 활용하여 구현되었습니다. 주식 정보 및 거래 내역을 관리하는 기능을 포함합니다.
 > 
 
@@ -482,11 +493,16 @@
     
     → 정보를 불러올 때, PortfolioResponse dto에 totalAssets
     
-4. 갱신 누르지 않으면 주가 변동이 적용이 안됨
-    
-    → 웹소켓 써서 해결해야 할듯? 나중에..
-    
 
+to-do
+
+1. 갱신 누르지 않으면 주가 변동이 적용이 안됨
+    
+    → 웹소켓 써서 해결해야 할듯?
+    
+2. 주가 변동 추이 차트 y축 고정 안됨, 간격 변경 시 전체 너비가 줄어듬
+    
+---
 느낀점 
 
 초반에 엔티티 설계가 중요하다
