@@ -8,6 +8,8 @@ import com.example.stockmarket.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
@@ -20,10 +22,8 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User login(String userId, String password) throws AuthenticationException {
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            throw new AuthenticationException("존재하지 않는 ID입니다.");
-        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AuthenticationException("존재하지 않는 ID입니다."));
         if (!user.getPassword().equals(password)) {
             throw new AuthenticationException("비밀번호가 일치하지 않습니다.");
         }
@@ -51,20 +51,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public boolean isAdmin(String userId, String password) throws AuthenticationException {
-        // 실제 환경에서는 데이터베이스에서 관리자 정보를 확인하는 것이 좋습니다
-        if (!userId.equals("admin")) {
-            throw new AuthenticationException("관리자 ID가 아닙니다.");
-        }
-        if (!password.equals("1234")) {
-            throw new AuthenticationException("비밀번호가 일치하지 않습니다.");
-        }
-        return true;
+    public boolean isAdmin(String userId) {
+        return userRepository.findById(userId)
+                .map(User::isRole)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 ID입니다: " + userId));
     }
 
     @Override
     public User findById(String userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 ID입니다: " + userId));
+    }
+
+    @Override
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
     }
 }

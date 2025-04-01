@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpSession;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -28,13 +30,16 @@ public class UserController {
 
             // 세션에 사용자 정보 저장
             session.setAttribute("userId", user.getUserId());
+            boolean isAdmin = userService.isAdmin(user.getUserId());
+            session.setAttribute("isAdmin", isAdmin);
 
             // 민감한 정보를 제외한 응답 객체 생성
             UserResponse response = new UserResponse(
                     user.getUserId(),
                     user.getPlayer().getName(),
                     user.getPlayer().getCash(),
-                    user.getPlayer().getPlayerId());
+                    user.getPlayer().getPlayerId(),
+                    isAdmin);
 
             return ResponseEntity.ok(response);
         } catch (AuthenticationException e) {
@@ -51,6 +56,7 @@ public class UserController {
         try {
             // 세션에서 사용자 정보 제거
             session.removeAttribute("userId");
+            session.removeAttribute("isAdmin");
             session.invalidate();
 
             return ResponseEntity.ok(new SuccessResponse("Logout successful"));
@@ -75,7 +81,8 @@ public class UserController {
                     user.getUserId(),
                     user.getPlayer().getName(),
                     user.getPlayer().getCash(),
-                    user.getPlayer().getPlayerId());
+                    user.getPlayer().getPlayerId(),
+                    userService.isAdmin(user.getUserId()));
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
@@ -84,20 +91,6 @@ public class UserController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Registration error", e.getMessage()));
-        }
-    }
-
-    @PostMapping("/admin/check")
-    public ResponseEntity<?> isAdmin(@RequestBody LoginRequest loginRequest) {
-        try {
-            boolean isAdmin = userService.isAdmin(loginRequest.getUserId(), loginRequest.getPassword());
-            return ResponseEntity.ok(new AdminResponse(isAdmin));
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(new ErrorResponse("Authentication failed", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Admin check error", e.getMessage()));
         }
     }
 
@@ -113,12 +106,48 @@ public class UserController {
 
         try {
             User user = userService.findById(userId);
-            UserResponse response = new UserResponse(user.getUserId(), user.getPlayer().getName(),
-                    user.getPlayer().getCash(), user.getPlayer().getPlayerId());
+            boolean isAdmin = userService.isAdmin(userId);
+            UserResponse response = new UserResponse(
+                    user.getUserId(),
+                    user.getPlayer().getName(),
+                    user.getPlayer().getCash(),
+                    user.getPlayer().getPlayerId(),
+                    isAdmin);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new ErrorResponse("Error retrieving user data", e.getMessage()));
+        }
+    }
+
+    // 모든 사용자 조회 (관리자 전용)
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllUsers(HttpSession session) {
+        String userId = (String) session.getAttribute("userId");
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+
+        if (userId == null || isAdmin == null || !isAdmin) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorResponse("Access denied", "Admin privileges required"));
+        }
+
+        try {
+            List<User> users = userService.getAllUsers();
+            if (users.isEmpty()) {
+                return ResponseEntity.noContent().build();
+            }
+            List<UserResponse> responses = users.stream()
+                    .map(user -> new UserResponse(
+                            user.getUserId(),
+                            user.getPlayer().getName(),
+                            user.getPlayer().getCash(),
+                            user.getPlayer().getPlayerId(),
+                            userService.isAdmin(user.getUserId())))
+                    .toList();
+            return ResponseEntity.ok(responses);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new ErrorResponse("User fetch failed", e.getMessage()));
         }
     }
 
@@ -144,15 +173,5 @@ public class UserController {
         }
 
         public String getMessage() { return message; }
-    }
-
-    private static class AdminResponse {
-        private final boolean isAdmin;
-
-        public AdminResponse(boolean isAdmin) {
-            this.isAdmin = isAdmin;
-        }
-
-        public boolean isAdmin() { return isAdmin; }
     }
 }

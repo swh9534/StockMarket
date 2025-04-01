@@ -27,25 +27,11 @@ onMounted(() => {
 });
 
 const storeUser = (user) => {
-  console.log("User stored:", user); // 로그 추가
+  console.log("Storing user:", user);
   localStorage.setItem("currentUser", JSON.stringify(user));
   localStorage.setItem("userId", user.userId);
   localStorage.setItem("playerId", user.playerId);
-};
-
-const checkAdmin = async () => {
-  try {
-    console.log("Checking admin for user:", userId.value); // 로그 추가
-    const response = await api.post("/users/admin/check", {
-      userId: userId.value,
-      password: password.value,
-    });
-    console.log("Admin check response:", response.data); // 로그 추가
-    localStorage.setItem("isAdmin", response.data?.isAdmin ? "true" : "false");
-  } catch (error) {
-    console.error("Admin check failed:", error); // 오류 로그 추가
-    localStorage.setItem("isAdmin", "false");
-  }
+  localStorage.setItem("admin", user.admin ? "true" : "false");
 };
 
 const login = async () => {
@@ -55,7 +41,7 @@ const login = async () => {
   }
 
   try {
-    console.log("Logging in with userId:", userId.value); // 로그 추가
+    console.log("Attempting login with userId:", userId.value);
     isProcessing.value = true;
     showSpinner();
 
@@ -64,15 +50,25 @@ const login = async () => {
       password: password.value,
     });
 
-    console.log("Login response:", response); // 로그인 응답 로그 추가
+    console.log("Login response:", response);
+    console.log("Response data:", response.data);
 
     if (response.status === 200) {
       storeUser(response.data);
-      // await checkAdmin();
-      router.push("/stock");
+      const admin = response.data.admin;
+      console.log("admin:", admin);
+      router.push(admin ? "/admin" : "/stock");
     }
   } catch (error) {
-    console.error("Login failed:", error); // 로그인 실패 로그 추가
+    console.error("Login failed:", error);
+    if (error.response) {
+      console.error("Error response:", error.response);
+      notifyError(
+        `로그인 실패: ${error.response.data?.message || error.message}`
+      );
+    } else {
+      notifyError(`로그인 실패: ${error.message}`);
+    }
     isNewUser.value = true;
     notifyInfo("새로운 사용자입니다. 회원가입 정보를 입력하세요.");
   } finally {
@@ -94,7 +90,7 @@ const signup = async () => {
   }
 
   try {
-    console.log("Signing up new user:", userId.value); // 로그 추가
+    console.log("Signing up new user:", userId.value);
     isProcessing.value = true;
     showSpinner();
 
@@ -105,15 +101,26 @@ const signup = async () => {
       initialCash: parseInt(initialCash.value, 10),
     });
 
-    console.log("Signup response:", response); // 회원가입 응답 로그 추가
+    console.log("Signup response:", response);
+    console.log("Response data:", response.data);
 
-    storeUser(response.data);
-    await checkAdmin();
-    isNewUser.value = false;
-    router.push("/stock");
+    if (response.status === 201) {
+      storeUser(response.data);
+      const admin = response.data.admin;
+      console.log("admin:", admin);
+      isNewUser.value = false;
+      router.push(admin ? "/admin" : "/stock");
+    }
   } catch (error) {
-    console.error("Signup failed:", error); // 회원가입 실패 로그 추가
-    notifyError("회원가입 실패: " + error.message);
+    console.error("Signup failed:", error);
+    if (error.response) {
+      console.error("Error response:", error.response);
+      notifyError(
+        `회원가입 실패: ${error.response.data?.message || error.message}`
+      );
+    } else {
+      notifyError(`회원가입 실패: ${error.message}`);
+    }
   } finally {
     isProcessing.value = false;
     hideSpinner();
