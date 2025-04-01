@@ -70,6 +70,7 @@ const getPlayerInfo = async () => {
     return;
   }
 
+  // 플레이어 정보 가져오기
   const playerUrl = `/api/players/${playerId}`;
   const playerResponse = await apiCall.justGet(playerUrl, null, null);
   if (playerResponse.playerId) {
@@ -78,6 +79,7 @@ const getPlayerInfo = async () => {
     notifyError("플레이어 정보를 불러오지 못했습니다.");
   }
 
+  // 포트폴리오 정보 가져오기
   const portfolioUrl = `/api/players/${playerId}/portfolio`;
   try {
     const portfolioResponse = await apiCall.justGet(portfolioUrl, null, null);
@@ -88,7 +90,7 @@ const getPlayerInfo = async () => {
     if (Array.isArray(portfolio)) {
       table.items = portfolio.map((item) => ({
         id: item.id,
-        stockName: String(item.stockName || ""), // 문자열로 강제 변환
+        stockName: String(item.stockName || ""),
         stockPrice: item.stock.stockPrice,
         stockQuantity: item.quantity,
         investedAmount: item.investedAmount,
@@ -104,7 +106,7 @@ const getPlayerInfo = async () => {
       );
 
       const totalItems = portfolio.length + 1;
-      const colors = generateColors(totalItems);
+      const colors = generateColors(totalItems); // 색상 생성 (아래에서 수정 예정)
       chartData.datasets[0].backgroundColor = colors;
       chartData.datasets[0].hoverBackgroundColor = colors;
     } else {
@@ -113,15 +115,6 @@ const getPlayerInfo = async () => {
       chartData.datasets[0].backgroundColor = ["#36A2EB"];
       chartData.datasets[0].hoverBackgroundColor = ["#36A2EB"];
     }
-
-    isDataLoaded.value = true;
-
-    await nextTick();
-    if (chartRef.value && chartRef.value.chart) {
-      chartRef.value.chart.update();
-    } else {
-      console.warn("차트 인스턴스가 준비되지 않았습니다.");
-    }
   } catch (error) {
     console.error("포트폴리오 정보 가져오기 실패:", error);
     notifyError("주식 목록을 불러오지 못했습니다.");
@@ -129,11 +122,13 @@ const getPlayerInfo = async () => {
     chartData.datasets[0].data = [player.playerMoney];
     chartData.datasets[0].backgroundColor = ["#36A2EB"];
     chartData.datasets[0].hoverBackgroundColor = ["#36A2EB"];
+  } finally {
     isDataLoaded.value = true;
-
     await nextTick();
     if (chartRef.value && chartRef.value.chart) {
       chartRef.value.chart.update();
+    } else {
+      console.warn("차트 인스턴스가 준비되지 않았습니다.");
     }
   }
 };
@@ -165,9 +160,18 @@ const tradeStock = async (action) => {
     const response = await apiCall.post(url, null, data);
     if (response && response.message && response.message.includes("완료")) {
       notifySuccess(`${action === "buy" ? "주식 구매" : "주식 판매"} 성공!`);
-      await getPlayerInfo();
+      // 입력값 초기화
       stockName.value = "";
       stockQuantity.value = "";
+      // 플레이어 정보와 포트폴리오 갱신
+      await getPlayerInfo();
+      // 차트가 렌더링될 때까지 기다림
+      await nextTick();
+      if (chartRef.value && chartRef.value.chart) {
+        chartRef.value.chart.update();
+      } else {
+        console.warn("차트 인스턴스가 준비되지 않았습니다.");
+      }
     } else {
       notifyError("거래 실패: 서버 응답 오류");
     }

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import api from "@/api"; // API 호출 유틸리티
 import { notifyError, showSpinner, hideSpinner } from "@/scripts/store-popups"; // 팝업 유틸리티
@@ -10,9 +10,12 @@ import StockGraph from "./components/StockGraph.vue";
 const router = useRouter(); // 라우터 사용
 const playerId = ref("");
 const selectedStock = ref(null); // 선택된 주식
+const key = ref(0); // StockGraph 컴포넌트를 강제로 리렌더링하기 위한 키
 
 const handleSelectStock = (stock) => {
   selectedStock.value = stock; // 선택된 주식 업데이트
+  // 주식이 변경되면 컴포넌트 키를 증가시켜 강제 리렌더링
+  key.value++;
 };
 
 // 로그아웃 함수
@@ -77,6 +80,7 @@ onMounted(() => {
         <div class="col-12">
           <StockGraph
             v-if="selectedStock"
+            :key="key"
             :stockName="selectedStock?.stockName"
           />
         </div>
