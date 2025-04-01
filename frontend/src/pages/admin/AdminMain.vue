@@ -54,6 +54,7 @@ const fetchPlayers = async () => {
   try {
     showSpinner();
     const response = await api.get("/users/all");
+    console.log("Fetched players:", response.data);
     players.value = response.data;
   } catch (error) {
     console.error("Failed to fetch players:", error);
@@ -145,7 +146,7 @@ onMounted(() => {
             <tr v-for="player in players" :key="player.userId">
               <td>{{ player.userId }}</td>
               <td>{{ player.playerName }}</td>
-              <td>{{ player.initialCash }}</td>
+              <td>{{ player.totalAssets }}</td>
             </tr>
           </tbody>
         </table>

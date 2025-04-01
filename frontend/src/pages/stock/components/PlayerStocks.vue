@@ -11,6 +11,7 @@ const router = useRouter();
 const stockName = ref("");
 const stockQuantity = ref("");
 const player = usePlayer();
+const totalAssets = ref(0);
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement);
 
@@ -80,10 +81,12 @@ const getPlayerInfo = async () => {
   const portfolioUrl = `/api/players/${playerId}/portfolio`;
   try {
     const portfolioResponse = await apiCall.justGet(portfolioUrl, null, null);
+    const portfolio = portfolioResponse.portfolio || [];
+    totalAssets.value = portfolioResponse.totalAssets || 0;
     console.log("포트폴리오 응답:", portfolioResponse);
 
-    if (Array.isArray(portfolioResponse)) {
-      table.items = portfolioResponse.map((item) => ({
+    if (Array.isArray(portfolio)) {
+      table.items = portfolio.map((item) => ({
         id: item.id,
         stockName: String(item.stockName || ""), // 문자열로 강제 변환
         stockPrice: item.stock.stockPrice,
@@ -94,13 +97,13 @@ const getPlayerInfo = async () => {
       }));
 
       chartData.labels = ["현금"].concat(
-        portfolioResponse.map((item) => item.stockName)
+        portfolio.map((item) => item.stockName)
       );
       chartData.datasets[0].data = [player.playerMoney].concat(
-        portfolioResponse.map((item) => item.totalValue)
+        portfolio.map((item) => item.totalValue)
       );
 
-      const totalItems = portfolioResponse.length + 1;
+      const totalItems = portfolio.length + 1;
       const colors = generateColors(totalItems);
       chartData.datasets[0].backgroundColor = colors;
       chartData.datasets[0].hoverBackgroundColor = colors;
@@ -270,7 +273,7 @@ onMounted(() => {
       </div>
 
       <div class="col-4">
-        <h5>총 자산</h5>
+        <p class="fs-5 fw-bold m-0">총 자산 {{ totalAssets }}원</p>
         <div style="width: 100%; height: 400px">
           <Pie
             v-if="isDataLoaded"

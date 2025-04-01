@@ -1,13 +1,12 @@
 package com.example.stockmarket.controller;
 
 import com.example.stockmarket.domain.Player;
-import com.example.stockmarket.domain.PlayerStock;
+import com.example.stockmarket.dto.PortfolioResponse; // 새로 추가
 import com.example.stockmarket.dto.StockRequest;
 import com.example.stockmarket.service.PlayerService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -30,8 +29,9 @@ public class PlayerController {
     }
 
     @GetMapping("/{playerId}/portfolio")
-    public List<PlayerStock> getPlayerPortfolio(@PathVariable String playerId) {
-        return playerService.getPlayerPortfolio(playerId);
+    public ResponseEntity<PortfolioResponse> getPlayerPortfolio(@PathVariable String playerId) { // 반환 타입 변경
+        PortfolioResponse portfolioResponse = playerService.getPlayerPortfolio(playerId);
+        return ResponseEntity.ok(portfolioResponse);
     }
 
     @PostMapping("/{playerId}/buy")
@@ -39,7 +39,6 @@ public class PlayerController {
         try {
             playerService.buyStock(playerId, stockRequest.getStockName(), stockRequest.getQuantity());
 
-            // Map을 사용하여 JSON 응답 반환
             Map<String, Object> response = new HashMap<>();
             response.put("message", "주식 매수 완료");
             response.put("stockName", stockRequest.getStockName());
@@ -57,11 +56,10 @@ public class PlayerController {
     @PostMapping("/{playerId}/sell")
     public ResponseEntity<Map<String, Object>> sellStock(
             @PathVariable String playerId,
-            @RequestBody StockRequest stockRequest) {  // @RequestParam에서 @RequestBody로 변경
+            @RequestBody StockRequest stockRequest) {
         try {
             playerService.sellStock(playerId, stockRequest.getStockName(), stockRequest.getQuantity());
 
-            // Map을 사용하여 JSON 응답 반환
             Map<String, Object> response = new HashMap<>();
             response.put("message", "주식 매도 완료");
             response.put("stockName", stockRequest.getStockName());

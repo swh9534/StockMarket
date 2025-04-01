@@ -3,6 +3,7 @@ package com.example.stockmarket.service;
 import com.example.stockmarket.domain.Player;
 import com.example.stockmarket.domain.PlayerStock;
 import com.example.stockmarket.domain.Stock;
+import com.example.stockmarket.dto.PortfolioResponse; // 새로 추가
 import com.example.stockmarket.repository.PlayerRepository;
 import com.example.stockmarket.repository.PlayerStockRepository;
 import com.example.stockmarket.repository.StockRepository;
@@ -28,8 +29,21 @@ public class PlayerServiceImpl implements PlayerService {
     }
 
     @Override
-    public List<PlayerStock> getPlayerPortfolio(String playerId) {
-        return playerStockRepository.findByPlayerPlayerId(playerId);
+    public PortfolioResponse getPlayerPortfolio(String playerId) { // 반환 타입 변경
+        Player player = playerRepository.findById(playerId)
+                .orElseThrow(() -> new IllegalArgumentException("Player not found: " + playerId));
+
+        List<PlayerStock> portfolio = playerStockRepository.findByPlayerPlayerId(playerId);
+
+        // 총 주식 가치 계산
+        long totalStockValue = portfolio.stream()
+                .mapToLong(PlayerStock::getTotalValue)
+                .sum();
+
+        // 총 자산 = 현금 + 주식 가치 합계
+        long totalAssets = player.getCash() + totalStockValue;
+
+        return new PortfolioResponse(portfolio, totalAssets);
     }
 
     @Override
@@ -90,6 +104,7 @@ public class PlayerServiceImpl implements PlayerService {
 
         playerStock.removeQuantity(quantity);
         int totalRevenue = stock.getStockPrice() * quantity;
+
         player.setCash(player.getCash() + totalRevenue);
 
         if (playerStock.getQuantity() == 0) {
