@@ -1,14 +1,44 @@
 <script setup>
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import api from "@/api"; // API 호출 유틸리티
+import { notifyError, showSpinner, hideSpinner } from "@/scripts/store-popups"; // 팝업 유틸리티
 import PlayerStocks from "./components/PlayerStocks.vue";
 import StockList from "./components/StockList.vue";
-import StockGraph from "./components/StockGraph.vue"; // StockGraph 컴포넌트 추가
+import StockGraph from "./components/StockGraph.vue";
 
+const router = useRouter(); // 라우터 사용
 const playerId = ref("");
 const selectedStock = ref(null); // 선택된 주식
 
 const handleSelectStock = (stock) => {
   selectedStock.value = stock; // 선택된 주식 업데이트
+};
+
+// 로그아웃 함수
+const logout = async () => {
+  try {
+    showSpinner();
+    await api.post("/users/logout"); // 로그아웃 API 호출
+    // localStorage 초기화
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("playerId");
+    localStorage.removeItem("isAdmin");
+    // 루트 경로로 리다이렉트
+    router.push("/");
+  } catch (error) {
+    console.error("Failed to logout:", error);
+    if (error.response) {
+      notifyError(
+        `로그아웃 실패: ${error.response.data?.message || error.message}`
+      );
+    } else {
+      notifyError(`로그아웃 실패: ${error.message}`);
+    }
+  } finally {
+    hideSpinner();
+  }
 };
 
 onMounted(() => {
@@ -21,9 +51,13 @@ onMounted(() => {
 
 <template>
   <div class="container-fluid">
-    <div class="row bg-body-tertiary">
+    <div class="row bg-body-tertiary align-items-center">
       <div class="col">
         <span class="ps-2 fs-2">SKALA STOCK Market</span>
+      </div>
+      <!-- 로그아웃 버튼 -->
+      <div class="col-auto pe-2">
+        <button class="btn btn-danger" @click="logout">로그아웃</button>
       </div>
     </div>
 

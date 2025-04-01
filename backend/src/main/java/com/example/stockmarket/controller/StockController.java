@@ -2,20 +2,21 @@ package com.example.stockmarket.controller;
 
 import com.example.stockmarket.domain.Stock;
 import com.example.stockmarket.domain.StockHistory;
+import com.example.stockmarket.dto.AddStockRequest;
 import com.example.stockmarket.service.StockService;
 import com.example.stockmarket.service.UserService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.servlet.http.HttpSession;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/stocks")
 public class StockController {
     private final StockService stockService;
-    private final UserService userService; // UserService 주입
+    private final UserService userService;
 
     public StockController(StockService stockService, UserService userService) {
         this.stockService = stockService;
@@ -29,8 +30,7 @@ public class StockController {
 
     @PostMapping("/add")
     public ResponseEntity<?> addStock(
-            @RequestParam String stockName,
-            @RequestParam int initialPrice,
+            @RequestBody AddStockRequest addStockRequest,
             HttpSession session) {
         // 세션에서 사용자 정보 확인
         String userId = (String) session.getAttribute("userId");
@@ -43,8 +43,11 @@ public class StockController {
         }
 
         try {
-            Stock newStock = stockService.addStock(stockName, initialPrice);
-            return ResponseEntity.ok(newStock);
+            Stock newStock = stockService.addStock(
+                    addStockRequest.getStockName(),
+                    addStockRequest.getInitialPrice()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(newStock);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(new ErrorResponse("Invalid stock data", e.getMessage()));

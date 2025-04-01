@@ -1,31 +1,50 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import api from "@/scripts/api-call"; // API 호출 유틸리티
+import { useRouter } from "vue-router";
+import api from "@/api";
 import { notifyError, showSpinner, hideSpinner } from "@/scripts/store-popups";
 
+const router = useRouter(); // 라우터 사용
 const stockName = ref("");
-const stockPrice = ref("");
+const initialPrice = ref("");
 const players = ref([]);
 
 const addStock = async () => {
-  if (!stockName.value || !stockPrice.value) {
+  if (!stockName.value || !initialPrice.value) {
     notifyError("주식 이름과 가격을 입력하세요.");
+    return;
+  }
+
+  const price = parseInt(initialPrice.value, 10);
+  if (isNaN(price) || price <= 0) {
+    notifyError("주식 가격은 0보다 큰 정수여야 합니다.");
     return;
   }
 
   try {
     showSpinner();
-    const response = await api.post("/stocks/add", {
-      name: stockName.value,
-      price: parseFloat(stockPrice.value),
-    });
+    const requestData = {
+      stockName: stockName.value,
+      initialPrice: price,
+    };
+    console.log("Sending request data:", requestData);
+    const response = await api.post("/stocks/add", requestData);
     console.log("Stock added:", response.data);
     stockName.value = "";
-    stockPrice.value = "";
-    notifyInfo("주식이 성공적으로 추가되었습니다.");
+    initialPrice.value = "";
+    notifyError(
+      `주식이 성공적으로 추가되었습니다: ${response.data.stockName} (가격: ${response.data.stockPrice})`
+    );
   } catch (error) {
     console.error("Failed to add stock:", error);
-    notifyError("주식 추가 실패: " + error.message);
+    if (error.response) {
+      console.error("Error response:", error.response);
+      notifyError(
+        `주식 추가 실패: ${error.response.data?.message || error.message}`
+      );
+    } else {
+      notifyError(`주식 추가 실패: ${error.message}`);
+    }
   } finally {
     hideSpinner();
   }
@@ -44,6 +63,32 @@ const fetchPlayers = async () => {
   }
 };
 
+// 로그아웃 함수
+const logout = async () => {
+  try {
+    showSpinner();
+    await api.post("/users/logout"); // 로그아웃 API 호출
+    // localStorage 초기화
+    localStorage.removeItem("currentUser");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("playerId");
+    localStorage.removeItem("isAdmin");
+    // 루트 경로로 리다이렉트
+    router.push("/");
+  } catch (error) {
+    console.error("Failed to logout:", error);
+    if (error.response) {
+      notifyError(
+        `로그아웃 실패: ${error.response.data?.message || error.message}`
+      );
+    } else {
+      notifyError(`로그아웃 실패: ${error.message}`);
+    }
+  } finally {
+    hideSpinner();
+  }
+};
+
 onMounted(() => {
   fetchPlayers(); // 페이지 로드 시 플레이어 목록 조회
 });
@@ -51,6 +96,11 @@ onMounted(() => {
 
 <template>
   <div class="container mt-3">
+    <!-- 로그아웃 버튼 -->
+    <div class="d-flex justify-content-end mb-3">
+      <button class="btn btn-danger" @click="logout">로그아웃</button>
+    </div>
+
     <h2>관리자 페이지</h2>
 
     <!-- 주식 추가 -->
@@ -66,7 +116,7 @@ onMounted(() => {
               placeholder="주식 이름"
             />
             <input
-              v-model="stockPrice"
+              v-model="initialPrice"
               type="number"
               class="form-control mb-2"
               placeholder="주식 가격"

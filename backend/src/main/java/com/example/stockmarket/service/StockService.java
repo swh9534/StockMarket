@@ -75,4 +75,5 @@ public class StockService {
     public List<StockHistory> getStockHistory(String stockName) {
         return stockHistoryRepository.findByStockNameOrderByDateAsc(stockName);
     }
+
 }

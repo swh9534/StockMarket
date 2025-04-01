@@ -42,7 +42,7 @@ public class Stock {
         Random random = new Random();
         double changePercent = (random.nextDouble() * 0.2 - 0.1); // -10% ~ +10% 변동
         this.stockPrice = (int) (this.stockPrice * (1 + changePercent));
-        if (this.stockPrice < 1) this.stockPrice = 1; // 최소 가격 1원 보장
+        if (this.stockPrice < 100) this.stockPrice = 100; // 최소 가격 100원 보장
     }
 
     @Override
