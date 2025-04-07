@@ -69,3 +69,4 @@ yarn.lock           # yarn lock 파일 (package-lock.json을 사용한다면 제
 *.swp
 
 .DS_Store
+*__pycache__*
